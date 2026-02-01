@@ -7,18 +7,21 @@ export async function GET(request) {
   const code = searchParams.get('code');
   const error = searchParams.get('error');
 
+  // Use NEXT_PUBLIC_APP_URL for redirects to ensure correct domain
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
   if (error) {
-    return NextResponse.redirect(new URL('/?error=oauth_error', request.url));
+    return NextResponse.redirect(`${appUrl}/?error=oauth_error`);
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL('/?error=no_code', request.url));
+    return NextResponse.redirect(`${appUrl}/?error=no_code`);
   }
 
   try {
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/oauth/discord/callback`;
+    const redirectUri = `${appUrl}/api/v1/oauth/discord/callback`;
 
     // Exchange code for token
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
@@ -37,7 +40,7 @@ export async function GET(request) {
 
     if (!tokenResponse.ok) {
       console.error('Failed to fetch token', await tokenResponse.text());
-      return NextResponse.redirect(new URL('/?error=token_fetch_failed', request.url));
+      return NextResponse.redirect(`${appUrl}/?error=token_fetch_failed`);
     }
 
     const tokenData = await tokenResponse.json();
@@ -51,7 +54,7 @@ export async function GET(request) {
 
     if (!userResponse.ok) {
        console.error('Failed to fetch user', await userResponse.text());
-       return NextResponse.redirect(new URL('/?error=user_fetch_failed', request.url));
+       return NextResponse.redirect(`${appUrl}/?error=user_fetch_failed`);
     }
 
     const userData = await userResponse.json();
@@ -78,10 +81,10 @@ export async function GET(request) {
     // Remove old cookie if exists
     cookieStore.delete('discord_access_token');
     
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(`${appUrl}/dashboard`);
 
   } catch (err) {
     console.error('OAuth error:', err);
-    return NextResponse.redirect(new URL('/?error=internal_error', request.url));
+    return NextResponse.redirect(`${appUrl}/?error=internal_error`);
   }
 }
