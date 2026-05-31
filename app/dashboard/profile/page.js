@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Heart, Plus, Trash2, AlertTriangle, Check, ExternalLink, Loader2, Image as ImageIcon } from 'lucide-react';
-import Sidebar from '@/app/dashboard/components/Sidebar';
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
@@ -88,9 +87,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto h-screen p-8">
+    <div className="p-8 max-w-6xl mx-auto">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Mi Perfil</h1>
 
@@ -305,7 +302,6 @@ export default function ProfilePage() {
           </div>
 
         </div>
-      </main>
     </div>
   );
 }

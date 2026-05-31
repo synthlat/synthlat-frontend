@@ -24,10 +24,17 @@ export default function ServerDashboard() {
       const currentGuild = userGuilds.find(g => g.id === guildId);
       
       if (!currentGuild) {
-        window.location.href = '/dashboard/servers';
-        return;
+        // Owner (or authorized admin) can still access by URL; ask server for summary.
+        const summaryRes = await fetch(`/api/v1/guilds/${guildId}/summary`);
+        if (!summaryRes.ok) {
+          window.location.href = '/dashboard/servers';
+          return;
+        }
+        const summary = await summaryRes.json();
+        setGuild(summary);
+      } else {
+        setGuild(currentGuild);
       }
-      setGuild(currentGuild);
 
       // If bot is not in guild, we don't need to fetch settings yet
       if (!currentGuild.bot_join) {

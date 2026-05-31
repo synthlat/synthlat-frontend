@@ -39,7 +39,21 @@ export default function Sidebar() {
           .then(res => res.json())
           .then(guilds => {
             const guild = guilds.find(g => g.id === guildId);
-            if (guild) setCurrentGuild(guild);
+            if (guild) {
+              setCurrentGuild(guild);
+              return;
+            }
+
+            // If it's not in the user's list, attempt summary (owner bypass lives server-side).
+            fetch(`/api/v1/guilds/${guildId}/summary`)
+              .then((res) => {
+                if (!res.ok) return null;
+                return res.json();
+              })
+              .then((summary) => {
+                if (summary) setCurrentGuild(summary);
+              })
+              .catch(() => {});
           });
       }
     } else {
@@ -110,9 +124,9 @@ export default function Sidebar() {
             <NavItem href="/dashboard/servers" icon={<Server size={20} />} label="Servidores" active={pathname === '/dashboard/servers'} />
             
             <div className="pt-2 mt-2 border-t border-white/5 space-y-2">
-              <NavItem href="/profile" icon={<User size={20} />} label="Mi Perfil" active={pathname === '/profile'} />
+              <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Mi Perfil" active={pathname === '/dashboard/profile'} />
               {isOwner && (
-                <NavItem href="/admin" icon={<ShieldAlert size={20} />} label="Admin Panel" active={pathname === '/admin'} />
+                <NavItem href="/dashboard/admin" icon={<ShieldAlert size={20} />} label="Admin Panel" active={pathname === '/dashboard/admin'} />
               )}
             </div>
           </>

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getGuildChannels } from '@/lib/discord';
-import { getUser } from '@/lib/auth';
+import { checkGuildAccess } from '@/lib/auth';
 
 export async function GET(request, { params }) {
   const { guildId } = await params;
   
   // Security check: Ensure user has access to this guild
-  const user = await getUser();
-  if (!user || !user.adminGuilds || !user.adminGuilds.includes(guildId)) {
+  const user = await checkGuildAccess(guildId);
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -40,8 +40,8 @@ export default function MobileNav() {
         <MobileNavItem href="/dashboard/servers" icon={<Server size={24} />} label="Servidores" active={pathname === '/dashboard/servers'} />
         
         {/* Profile / Avatar */}
-        <Link href="/profile" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${pathname === '/profile' ? 'text-purple-400' : 'text-gray-400'}`}>
-          <div className={`w-7 h-7 rounded-full overflow-hidden border-2 ${pathname === '/profile' ? 'border-purple-500' : 'border-transparent'}`}>
+        <Link href="/dashboard/profile" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${pathname === '/dashboard/profile' ? 'text-purple-400' : 'text-gray-400'}`}>
+          <div className={`w-7 h-7 rounded-full overflow-hidden border-2 ${pathname === '/dashboard/profile' ? 'border-purple-500' : 'border-transparent'}`}>
             {user ? (
               <img 
                 src={user.avatar_url || 'https://cdn.synth.lat/images/discord/avatar_default.png'} 
@@ -57,7 +57,7 @@ export default function MobileNav() {
         </Link>
 
         {isOwner && (
-          <MobileNavItem href="/admin" icon={<ShieldAlert size={24} />} label="Admin" active={pathname === '/admin'} />
+          <MobileNavItem href="/dashboard/admin" icon={<ShieldAlert size={24} />} label="Admin" active={pathname === '/dashboard/admin'} />
         )}
       </div>
     </>

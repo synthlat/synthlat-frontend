@@ -64,23 +64,28 @@ export default function ServersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {guilds.length > 0 ? (
           guilds.map((guild) => (
+            (() => {
+              const name = typeof guild?.name === 'string' && guild.name.trim() ? guild.name : (guild?.id ? String(guild.id) : 'Servidor');
+              const initials = name.substring(0, 2).toUpperCase();
+
+              return (
             <div key={guild.id} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-purple-500/50 transition-all hover:-translate-y-1">
               <div className="flex items-center gap-4 mb-4">
                 <div className="relative w-14 h-14 rounded-full bg-gray-800 shrink-0 overflow-hidden border border-white/10 group-hover:border-purple-500 transition-colors">
                   {guild.icon_url ? (
                     <img 
                       src={guild.icon_url} 
-                      alt={guild.name}
+                      alt={name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xl font-bold text-gray-500">
-                      {guild.name.substring(0, 2).toUpperCase()}
+                      {initials}
                     </div>
                   )}
                 </div>
                 <div className="overflow-hidden">
-                  <h3 className="font-bold truncate group-hover:text-purple-400 transition-colors">{guild.name}</h3>
+                  <h3 className="font-bold truncate group-hover:text-purple-400 transition-colors">{name}</h3>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-400">Administrador</span>
                     {guild.bot_join && (
@@ -106,6 +111,8 @@ export default function ServersPage() {
                 </a>
               )}
             </div>
+              );
+            })()
           ))
         ) : (
           <div className="col-span-full text-center py-12 bg-white/5 rounded-xl border border-white/10 border-dashed">

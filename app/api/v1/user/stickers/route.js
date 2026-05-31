@@ -40,6 +40,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
+    // Basic validation: only allow http(s) URLs
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return NextResponse.json({ error: 'Invalid URL protocol' }, { status: 400 });
+    }
+    if (url.length > 2048) {
+      return NextResponse.json({ error: 'URL too long' }, { status: 400 });
+    }
+
     const currentStickers = user.stickers || [];
     if (currentStickers.length >= 15) {
       return NextResponse.json({ error: 'Limit reached' }, { status: 400 });

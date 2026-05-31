@@ -21,7 +21,7 @@ export default function GuildSearch() {
         const res = await fetch(`/api/v1/admin/guilds/search?q=${encodeURIComponent(query)}`);
         if (res.ok) {
           const data = await res.json();
-          setResults(data);
+          setResults(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error(error);
@@ -37,13 +37,13 @@ export default function GuildSearch() {
     <div className="bg-white/5 border border-white/10 rounded-xl p-6">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <Server size={20} className="text-blue-400" />
-        Administrar Servidor
+        Editar cualquier servidor
       </h2>
-      
+
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar por nombre o ID..."
@@ -58,35 +58,41 @@ export default function GuildSearch() {
 
       <div className="space-y-2">
         {results.length > 0 ? (
-          results.map((guild) => (
-            <div key={guild.id} className="flex items-center justify-between bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors group">
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-800 shrink-0">
-                  {guild.icon_url ? (
-                    <img src={guild.icon_url} alt={guild.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                      {guild.name.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-white">{guild.name}</div>
-                  <div className="text-xs text-gray-500 font-mono">{guild.id}</div>
-                </div>
-              </div>
-              <Link 
-                href={`/dashboard/servers/${guild.id}`}
-                className="flex items-center gap-2 px-3 py-1.5 bg-purple-600/20 text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg text-xs font-bold transition-all"
+          results.map((guild) => {
+            const name = typeof guild?.name === 'string' && guild.name.trim() ? guild.name : String(guild?.id || 'Servidor');
+            const initials = name.substring(0, 2).toUpperCase();
+
+            return (
+              <div
+                key={guild.id}
+                className="flex items-center justify-between bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors group"
               >
-                Gestionar <ArrowRight size={14} />
-              </Link>
-            </div>
-          ))
+                <div className="flex items-center gap-3">
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-800 shrink-0">
+                    {guild.icon_url ? (
+                      <img src={guild.icon_url} alt={name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                        {initials}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-white">{name}</div>
+                    <div className="text-xs text-gray-500 font-mono">{guild.id}</div>
+                  </div>
+                </div>
+                <Link
+                  href={`/dashboard/servers/${guild.id}`}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-purple-600/20 text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg text-xs font-bold transition-all"
+                >
+                  Gestionar <ArrowRight size={14} />
+                </Link>
+              </div>
+            );
+          })
         ) : query.length >= 2 && !loading ? (
-          <div className="text-center py-4 text-gray-500 text-sm">
-            No se encontraron servidores.
-          </div>
+          <div className="text-center py-4 text-gray-500 text-sm">No se encontraron servidores.</div>
         ) : null}
       </div>
     </div>

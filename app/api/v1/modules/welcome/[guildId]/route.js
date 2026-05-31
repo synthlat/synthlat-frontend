@@ -1,24 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getWelcomeSettings, updateWelcomeSettings } from '@/lib/modules/welcome';
-import { getUser } from '@/lib/auth';
-
-// Middleware-like check for guild access
-async function checkAccess(guildId) {
-  const user = await getUser();
-  if (!user) return null;
-
-  // Check if user is admin of this guild
-  if (!user.adminGuilds || !user.adminGuilds.includes(guildId)) {
-    return null;
-  }
-
-  return user;
-}
+import { checkGuildAccess } from '@/lib/auth';
 
 export async function GET(request, { params }) {
   const { guildId } = await params;
   
-  const user = await checkAccess(guildId);
+  const user = await checkGuildAccess(guildId);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -35,7 +22,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   const { guildId } = await params;
   
-  const user = await checkAccess(guildId);
+  const user = await checkGuildAccess(guildId);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

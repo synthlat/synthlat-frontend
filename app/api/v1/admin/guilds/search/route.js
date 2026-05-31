@@ -4,6 +4,10 @@ import { getDatabase } from '@/lib/mongodb';
 
 const OWNER_ID = process.env.OWNER_ID;
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function GET(request) {
   const user = await getUser();
   
@@ -20,10 +24,11 @@ export async function GET(request) {
 
   try {
     const db = await getDatabase();
+    const safeQuery = escapeRegExp(query);
     const guilds = await db.collection('guilds')
       .find({
         $or: [
-          { name: { $regex: query, $options: 'i' } },
+          { name: { $regex: safeQuery, $options: 'i' } },
           { id: query }
         ]
       })

@@ -6,6 +6,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const returnedState = searchParams.get('state');
 
   // Use NEXT_PUBLIC_APP_URL for redirects to ensure correct domain
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -19,6 +20,15 @@ export async function GET(request) {
   }
 
   try {
+    // CSRF protection: validate OAuth state
+    const cookieStore = await cookies();
+    const expectedState = cookieStore.get('oauth_state')?.value;
+    cookieStore.delete('oauth_state');
+
+    if (!expectedState || !returnedState || expectedState !== returnedState) {
+      return NextResponse.redirect(`${appUrl}/?error=invalid_state`);
+    }
+
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
     const redirectUri = `${appUrl}/api/v1/oauth/discord/callback`;
@@ -66,8 +76,7 @@ export async function GET(request) {
       tokenData.refresh_token, 
       tokenData.expires_in
     );
-    
-    const cookieStore = await cookies();
+
     
     // Set secure session cookie
     cookieStore.set('auth_token', authToken, {

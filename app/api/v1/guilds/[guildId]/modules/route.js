@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/auth';
+import { checkGuildAccess } from '@/lib/auth';
 import { getWelcomeSettings } from '@/lib/modules/welcome';
 import { getByeSettings } from '@/lib/modules/bye';
 import { getInviteTrackerSettings } from '@/lib/modules/invitetracker';
@@ -9,21 +9,10 @@ import { getTicketsSettings } from '@/lib/modules/tickets';
 import { getReportsSettings } from '@/lib/modules/reports';
 import { getTempVoiceSettings } from '@/lib/modules/tempvoice';
 
-async function checkAccess(guildId) {
-  const user = await getUser();
-  if (!user) return null;
-
-  if (!user.adminGuilds || !user.adminGuilds.includes(guildId)) {
-    return null;
-  }
-
-  return user;
-}
-
 export async function GET(request, { params }) {
   const { guildId } = await params;
   
-  const user = await checkAccess(guildId);
+  const user = await checkGuildAccess(guildId);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
