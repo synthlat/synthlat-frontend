@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Ban, CheckCircle2, ExternalLink, RefreshCw, Search } from 'lucide-react';
 
@@ -22,58 +22,74 @@ export default function ServersManager() {
   const [query, setQuery] = useState('');
   const [expandedId, setExpandedId] = useState(null);
 
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
   const [reasonById, setReasonById] = useState({});
   const [expiresById, setExpiresById] = useState({});
   const [permanentById, setPermanentById] = useState({});
 
-  const load = () => {
-    setLoading(true);
-    fetch('/api/v1/admin/guilds/list')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        setGuilds(Array.isArray(data) ? data : []);
+  const load = ({ nextPage, nextQuery } = {}) => {
+    const effectivePage = typeof nextPage === 'number' ? nextPage : page;
+    const effectiveQuery = typeof nextQuery === 'string' ? nextQuery : query;
 
-        // Seed form state
+    setLoading(true);
+
+    const params = new URLSearchParams();
+    if (effectiveQuery.trim()) params.set('q', effectiveQuery.trim());
+    params.set('page', String(effectivePage));
+    params.set('limit', '20');
+
+    fetch(`/api/v1/admin/guilds/list?${params.toString()}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        setGuilds(items);
+        setPage(Number.isFinite(payload?.page) ? payload.page : effectivePage);
+        setTotal(Number.isFinite(payload?.total) ? payload.total : items.length);
+        setTotalPages(Number.isFinite(payload?.totalPages) ? payload.totalPages : 1);
+        setExpandedId(null);
+
         const nextReason = {};
         const nextExpires = {};
         const nextPermanent = {};
-        for (const g of Array.isArray(data) ? data : []) {
+
+        for (const g of items) {
           const banned = g?.banned;
           nextReason[g.id] = banned?.reason || '';
           nextExpires[g.id] = banned?.expires ? new Date(banned.expires).toISOString().slice(0, 16) : '';
           nextPermanent[g.id] = !banned?.expires;
         }
-        setReasonById(nextReason);
-        setExpiresById(nextExpires);
-        setPermanentById(nextPermanent);
+
+        setReasonById((prev) => ({ ...prev, ...nextReason }));
+        setExpiresById((prev) => ({ ...prev, ...nextExpires }));
+        setPermanentById((prev) => ({ ...prev, ...nextPermanent }));
       })
       .catch(() => setGuilds([]))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (!hasHydrated) return;
+    const handle = setTimeout(() => {
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+      load({ nextPage: 1, nextQuery: query });
+    }, 400);
 
-  const sortedGuilds = useMemo(() => {
-    return [...guilds].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-  }, [guilds]);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, hasHydrated]);
 
-  const filteredGuilds = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return sortedGuilds;
-    return sortedGuilds.filter((g) => {
-      const name = String(g?.name || '').toLowerCase();
-      const id = String(g?.id || '').toLowerCase();
-      return name.includes(q) || id.includes(q);
-    });
-  }, [sortedGuilds, query]);
-
-  const totals = useMemo(() => {
-    const total = sortedGuilds.length;
-    const banned = sortedGuilds.filter((g) => !!g?.banned?.status).length;
-    return { total, banned };
-  }, [sortedGuilds]);
+  useEffect(() => {
+    if (!hasHydrated) setHasHydrated(true);
+    load({ nextPage: page });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const setBan = async (guildId, status) => {
     setSavingId(guildId);
@@ -106,11 +122,9 @@ export default function ServersManager() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold">Servidores</h2>
-            <div className="text-xs text-gray-500">Lista desde MongoDB</div>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Total: {totals.total}</span>
-            <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Baneados: {totals.banned}</span>
+            <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Resultados: {total}</span>
           </div>
         </div>
 
@@ -125,7 +139,7 @@ export default function ServersManager() {
             />
           </div>
           <button
-            onClick={load}
+            onClick={() => load()}
             disabled={loading}
             className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
           >
@@ -138,7 +152,7 @@ export default function ServersManager() {
         <div className="p-6 flex items-center text-gray-500">
           <Loader2 className="animate-spin mr-2" size={18} /> Cargando...
         </div>
-      ) : filteredGuilds.length === 0 ? (
+      ) : guilds.length === 0 ? (
         <div className="p-6 text-sm text-gray-500">No hay resultados.</div>
       ) : (
         <div className="divide-y divide-white/10">
@@ -150,7 +164,7 @@ export default function ServersManager() {
           </div>
 
           <div className="max-h-[640px] overflow-y-auto custom-scrollbar">
-            {filteredGuilds.map((g) => {
+            {guilds.map((g) => {
               const banned = !!g?.banned?.status;
               const banReason = g?.banned?.reason || '';
               const banExpires = g?.banned?.expires || null;
@@ -272,6 +286,34 @@ export default function ServersManager() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="px-6 py-4 flex items-center justify-between text-sm">
+            <button
+              onClick={() => {
+                const next = Math.max(1, page - 1);
+                setPage(next);
+              }}
+              disabled={loading || page <= 1}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+            >
+              Anterior
+            </button>
+
+            <div className="text-xs text-gray-400">
+              Página <span className="text-gray-200">{page}</span> de <span className="text-gray-200">{totalPages}</span>
+            </div>
+
+            <button
+              onClick={() => {
+                const next = Math.min(totalPages, page + 1);
+                setPage(next);
+              }}
+              disabled={loading || page >= totalPages}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       )}

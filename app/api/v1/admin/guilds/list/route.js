@@ -25,7 +25,7 @@ export async function GET(request) {
     const db = await getDatabase();
     const { searchParams } = new URL(request.url);
     const q = (searchParams.get('q') || '').trim();
-    const page = clampInt(searchParams.get('page'), { min: 1, max: 1000000, fallback: 1 });
+    const page = clampInt(searchParams.get('page'), { min: 1, max: 1_000_000, fallback: 1 });
     const limit = clampInt(searchParams.get('limit'), { min: 1, max: 20, fallback: 20 });
 
     const filter = q
@@ -38,26 +38,27 @@ export async function GET(request) {
       : {};
 
     const guildsCollection = db.collection('guilds');
-    const skip = (page - 1) * limit;
 
-    const [total, guilds] = await Promise.all([
-      guildsCollection.countDocuments(filter),
-      guildsCollection
-        .find(filter, {
-          projection: {
-            _id: 0,
-            id: 1,
-            name: 1,
-            icon_url: 1,
-            bot_in_guild: 1,
-            banned: 1
-          }
-        })
-        .sort({ name: 1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray()
-    ]);
+    const total = await guildsCollection.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, totalPages);
+    const skip = (safePage - 1) * limit;
+
+    const guilds = await guildsCollection
+      .find(filter, {
+        projection: {
+          _id: 0,
+          id: 1,
+          name: 1,
+          icon_url: 1,
+          bot_in_guild: 1,
+          banned: 1
+        }
+      })
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
 
     const items = guilds
       .map((g) => {
@@ -81,9 +82,6 @@ export async function GET(request) {
         };
       })
       .filter((g) => !!g.id);
-
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const safePage = Math.min(page, totalPages);
 
     return NextResponse.json({
       items,
